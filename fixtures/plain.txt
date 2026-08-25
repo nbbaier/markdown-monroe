@@ -1,0 +1,6 @@
+# Plain text Markdown fixture
+
+This response is served as text/plain, so detection should require Markdown-shaped syntax before replacing it.
+
+- It has a list
+- It has a [link](https://example.com)
