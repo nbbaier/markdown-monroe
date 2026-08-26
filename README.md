@@ -10,6 +10,7 @@ A clean, GitHub-style Markdown viewer for Chrome.
 - Toggleable, keyboard-operable Outline that becomes a drawer on narrow screens
 - Light, dark, and auto (system) themes with a persisted browser-local preference
 - Unsafe HTML is sanitized before it reaches the viewer
+- _...and some other [planned features](#planned-features)_
 
 ## Screenshots
 
@@ -21,11 +22,45 @@ A clean, GitHub-style Markdown viewer for Chrome.
 
 Markdown Monroe runs as a content script on all pages but only replaces a response when its MIME type is Markdown (`text/markdown`, `text/x-markdown`, or the corresponding `application/*` types). `text/plain` responses are replaced only when the body is a plain-text document containing recognizable Markdown syntax. Normal HTML documents are left alone.
 
-### Planned features
+## Install
+
+Markdown Monroe currently supports Chrome. Both installation paths use Chrome's **Load unpacked** flow.
+
+### Option 1: Download a release
+
+1. Download `markdown-monroe-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/nbbaier/markdown-monroe/releases/latest).
+2. Extract the ZIP.
+3. Open `chrome://extensions` and enable **Developer mode**.
+4. Choose **Load unpacked** and select the extracted directory.
+
+### Option 2: Build from source
+
+```sh
+git clone https://github.com/nbbaier/markdown-monroe.git
+cd markdown-monroe
+bun install --frozen-lockfile
+bun run build
+```
+
+Then open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the repository's `dist/` directory.
+
+Open the fixture links in Chrome and verify detection, rendered GFM, Outline navigation and toggle, Preview/Code/Raw switching, Code folding, syntax highlighting, and all three theme choices. Reload after choosing a theme to verify that the theme persists while the view resets to Preview with the Outline open. Also open `/ordinary.html` to confirm it is not replaced and `/unsafe.md` to confirm scripts, event handlers, and unsafe URL schemes do not execute.
+
+`bun run verify:fixtures` uses JSDOM to exercise the detector and sanitizer in Bun. When headed Chrome is launched with a DevTools port, the repeatable Chrome smoke check can be run with `bun run smoke:chrome` (set `MARKDOWN_MONROE_CDP_PORT` and `MARKDOWN_MONROE_FIXTURE_ORIGIN` when they differ from `9222` and `http://127.0.0.1:4174`).
+
+## Planned Features 
 
 - Copy markdown to clipboard
 - Copy fenced copy block contents to clipboard
 - Handy keyboard shortcuts 
+
+## Notes and limitations
+
+- Firefox and other browsers are intentionally unsupported for now. Cross-browser support will require explicit browser-specific packaging and acceptance testing rather than relying on a shared manifest.
+- The detector intentionally does not replace arbitrary `text/plain` paragraphs because doing so would make ordinary plain-text pages surprising. Such responses need Markdown-shaped syntax or a Markdown MIME type.
+- Markdown parsing is provided by Marked with GFM enabled. Sanitization removes raw executable/embedded HTML; intentionally unsafe or unusual raw HTML may therefore render differently from the source.
+
+
 
 ## Development
 
@@ -54,37 +89,6 @@ It serves the fixtures at `http://localhost:4173/`:
 - `/plain.txt` — Markdown-shaped `text/plain` detection
 - `/ordinary.html` — ordinary HTML that must remain untouched
 
-## Install
-
-Markdown Monroe currently supports Chrome. Both installation paths use Chrome's **Load unpacked** flow.
-
-### Download a release
-
-1. Download `markdown-monroe-vX.Y.Z.zip` from the [latest GitHub release](https://github.com/nbbaier/markdown-monroe/releases/latest).
-2. Extract the ZIP.
-3. Open `chrome://extensions` and enable **Developer mode**.
-4. Choose **Load unpacked** and select the extracted directory.
-
-### Build from source
-
-```sh
-git clone https://github.com/nbbaier/markdown-monroe.git
-cd markdown-monroe
-bun install --frozen-lockfile
-bun run build
-```
-
-Then open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the repository's `dist/` directory.
-
-Open the fixture links in Chrome and verify detection, rendered GFM, Outline navigation and toggle, Preview/Code/Raw switching, Code folding, syntax highlighting, and all three theme choices. Reload after choosing a theme to verify that the theme persists while the view resets to Preview with the Outline open. Also open `/ordinary.html` to confirm it is not replaced and `/unsafe.md` to confirm scripts, event handlers, and unsafe URL schemes do not execute.
-
-`bun run verify:fixtures` uses JSDOM to exercise the detector and sanitizer in Bun. When headed Chrome is launched with a DevTools port, the repeatable Chrome smoke check can be run with `bun run smoke:chrome` (set `MARKDOWN_MONROE_CDP_PORT` and `MARKDOWN_MONROE_FIXTURE_ORIGIN` when they differ from `9222` and `http://127.0.0.1:4174`).
-
-## Notes and limitations
-
-- Firefox and other browsers are intentionally unsupported for now. Cross-browser support will require explicit browser-specific packaging and acceptance testing rather than relying on a shared manifest.
-- The detector intentionally does not replace arbitrary `text/plain` paragraphs because doing so would make ordinary plain-text pages surprising. Such responses need Markdown-shaped syntax or a Markdown MIME type.
-- Markdown parsing is provided by Marked with GFM enabled. Sanitization removes raw executable/embedded HTML; intentionally unsafe or unusual raw HTML may therefore render differently from the source.
 
 ## Releases
 
