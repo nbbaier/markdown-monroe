@@ -1,6 +1,6 @@
 # Markdown Monroe
 
-A glamorous Markdown response viewer for Chrome and Firefox.
+A clean, GitHub-style Markdown viewer for Chrome.
 
 ## Features
 
