@@ -143,6 +143,7 @@ Object.defineProperty(globalThis, "chrome", {
 });
 
 const { createViewer } = await import("../src/viewer");
+document.title = "markdown.md";
 await createViewer(markdown);
 
 const root = document.querySelector<HTMLElement>("#mm-root");
@@ -163,6 +164,10 @@ assert(
 assert(
 	!document.querySelector("#mm-copy-markdown, #mm-copy-code, .mm-code-copy"),
 	"Copy UI is still present",
+);
+assert(
+	document.title === "markdown.md",
+	"Viewer did not preserve the original document title",
 );
 const expectedSourceLines = markdown.endsWith("\n")
 	? markdown.replace(/\r\n?/g, "\n").split("\n").length - 1
@@ -227,6 +232,7 @@ assert(
 	"Theme preference was not stored",
 );
 
+document.title = "";
 await createViewer(markdown);
 assert(currentView() === "preview", "View mode did not reset to Preview");
 assert(
@@ -236,6 +242,10 @@ assert(
 assert(
 	!document.querySelector("#mm-toc")?.hasAttribute("hidden"),
 	"Outline did not reset open",
+);
+assert(
+	document.title === "" && !document.querySelector("title"),
+	"Viewer added a title when the original document had none",
 );
 console.log(
 	"Fixture detection, rendering, three view modes, folding, Outline state, and sanitization: PASS",

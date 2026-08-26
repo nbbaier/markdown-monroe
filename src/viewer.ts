@@ -253,6 +253,7 @@ function renderToc(root: HTMLElement, formatted: FormattedMarkdown): void {
 }
 
 export async function createViewer(raw: string): Promise<void> {
+	const originalTitle = document.title;
 	const themePreference = await readPreference<string>(THEME_KEY, "auto");
 	const theme: Theme = isTheme(themePreference) ? themePreference : "auto";
 
@@ -260,7 +261,7 @@ export async function createViewer(raw: string): Promise<void> {
 	const head = document.createElement("head");
 	const body = document.createElement("body");
 	document.documentElement.replaceChildren(head, body);
-	document.title = "Markdown Monroe";
+	if (originalTitle) document.title = originalTitle;
 
 	const stylesheet = document.createElement("link");
 	stylesheet.rel = "stylesheet";
