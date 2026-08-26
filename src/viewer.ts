@@ -1,215 +1,343 @@
-import { extensionUrl, readPreference, writePreference } from "./platform";
+import chevronDownIcon from "@primer/octicons/build/svg/chevron-down-12.svg?raw";
+import listUnorderedIcon from "@primer/octicons/build/svg/list-unordered-16.svg?raw";
+import xIcon from "@primer/octicons/build/svg/x-16.svg?raw";
 import {
-  prepareFormattedContent,
-  renderMarkdown,
-  type FormattedMarkdown,
-  type Heading,
+	type FormattedMarkdown,
+	type Heading,
+	highlightSourceLine,
+	prepareFormattedContent,
+	renderMarkdown,
 } from "./markdown";
+import { extensionUrl, readPreference, writePreference } from "./platform";
 
-type ViewMode = "formatted" | "raw";
+type ViewMode = "preview" | "code" | "raw";
 export type Theme = "light" | "dark" | "auto";
 
 const THEME_KEY = "markdown-monroe-theme";
 
 function isTheme(value: string): value is Theme {
-  return value === "light" || value === "dark" || value === "auto";
+	return value === "light" || value === "dark" || value === "auto";
+}
+
+function requiredElement<T extends Element>(
+	root: ParentNode,
+	selector: string,
+): T {
+	const element = root.querySelector<T>(selector);
+	if (!element) throw new Error(`Viewer element not found: ${selector}`);
+	return element;
 }
 
 function createShell(root: HTMLElement): void {
-  root.innerHTML = `
-    <header class="mm-toolbar">
-      <div class="mm-brand">
-        <strong>Markdown Monroe</strong>
-        <span>Markdown response</span>
-      </div>
-      <div class="mm-toolbar-controls" role="toolbar" aria-label="Markdown viewer controls">
-        <div class="mm-control-group" role="group" aria-label="View mode">
-          <span class="mm-control-label">View</span>
-          <button type="button" class="mm-view-button mm-active" data-view="formatted" aria-pressed="true">Formatted</button>
-          <button type="button" class="mm-view-button" data-view="raw" aria-pressed="false">Raw</button>
+	root.innerHTML = `
+    <div class="mm-viewer-frame">
+      <header class="mm-toolbar" role="toolbar" aria-label="Markdown viewer controls">
+        <div class="mm-toolbar-primary">
+          <div class="mm-view-tabs" role="group" aria-label="View mode">
+            <button type="button" class="mm-view-button mm-active" data-view="preview" aria-pressed="true">Preview</button>
+            <button type="button" class="mm-view-button" data-view="code" aria-pressed="false">Code</button>
+            <button type="button" class="mm-view-button" data-view="raw" aria-pressed="false">Raw</button>
+          </div>
+          <span id="mm-document-stats" class="mm-document-stats"></span>
         </div>
-        <button type="button" id="mm-toc-toggle" aria-controls="mm-toc" aria-expanded="true">TOC</button>
-        <button type="button" id="mm-copy-markdown">Copy Markdown</button>
-        <button type="button" id="mm-copy-code">Copy code blocks</button>
-        <label class="mm-theme-control" for="mm-theme">
-          <span class="mm-control-label">Theme</span>
-          <select id="mm-theme" aria-label="Theme">
-            <option value="auto">Auto</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </label>
-      </div>
-      <div id="mm-status" class="mm-status" role="status" aria-live="polite"></div>
-    </header>
-    <main class="mm-layout">
-      <aside id="mm-toc" class="mm-toc" aria-label="Table of Contents">
-        <div class="mm-toc-heading">Contents</div>
-        <nav aria-label="Document headings">
-          <ol id="mm-toc-list"></ol>
-        </nav>
-      </aside>
-      <section class="mm-reading" aria-label="Markdown document">
-        <article id="mm-formatted" class="mm-formatted"></article>
-        <pre id="mm-raw" class="mm-raw" hidden><code></code></pre>
-      </section>
-    </main>
+        <div class="mm-toolbar-actions">
+          <button type="button" id="mm-toc-toggle" class="mm-toolbar-button" aria-label="Outline" aria-controls="mm-toc" aria-expanded="true">
+            <span class="mm-icon" aria-hidden="true">${listUnorderedIcon}</span>
+            <span>Outline</span>
+          </button>
+          <label class="mm-theme-control" for="mm-theme">
+            <span>Theme</span>
+            <select id="mm-theme" aria-label="Theme">
+              <option value="auto">Auto</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+        </div>
+      </header>
+      <button type="button" id="mm-toc-backdrop" class="mm-toc-backdrop" aria-label="Close Outline" hidden></button>
+      <main class="mm-layout">
+        <section class="mm-reading" aria-label="Markdown document">
+          <article id="mm-preview" class="mm-preview"></article>
+          <div id="mm-code" class="mm-source mm-code-source" aria-label="Highlighted Markdown source" hidden></div>
+          <pre id="mm-raw" class="mm-raw" aria-label="Raw Markdown source" hidden><code></code></pre>
+        </section>
+        <aside id="mm-toc" class="mm-toc" aria-label="Table of Contents">
+          <div class="mm-toc-header">
+            <div class="mm-toc-heading">Outline</div>
+            <button type="button" id="mm-toc-close" class="mm-icon-button" aria-label="Close Outline">
+              <span class="mm-icon" aria-hidden="true">${xIcon}</span>
+            </button>
+          </div>
+          <nav aria-label="Document headings">
+            <ol id="mm-toc-list"></ol>
+          </nav>
+        </aside>
+      </main>
+    </div>
   `;
 }
 
 function buildToc(list: HTMLOListElement, headings: Heading[]): void {
-  list.replaceChildren();
-  for (const heading of headings) {
-    const item = document.createElement("li");
-    item.style.setProperty("--mm-heading-depth", String(Math.max(0, heading.depth - 1)));
-    const link = document.createElement("a");
-    link.href = `#${heading.id}`;
-    link.textContent = heading.text;
-    item.append(link);
-    list.append(item);
-  }
+	list.replaceChildren();
+	for (const heading of headings) {
+		const item = document.createElement("li");
+		item.style.setProperty(
+			"--mm-heading-depth",
+			String(Math.max(0, heading.depth - 1)),
+		);
+		const link = document.createElement("a");
+		link.href = `#${heading.id}`;
+		link.textContent = heading.text;
+		item.append(link);
+		list.append(item);
+	}
 }
 
-function setView(root: HTMLElement, mode: ViewMode): void {
-  const formatted = root.querySelector<HTMLElement>("#mm-formatted");
-  const raw = root.querySelector<HTMLElement>("#mm-raw");
-  if (!formatted || !raw) return;
-
-  formatted.hidden = mode !== "formatted";
-  raw.hidden = mode !== "raw";
-  root.querySelectorAll<HTMLButtonElement>(".mm-view-button").forEach((button) => {
-    const active = button.dataset.view === mode;
-    button.classList.toggle("mm-active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
+function getSourceLines(raw: string): string[] {
+	const normalized = raw.replace(/\r\n?/g, "\n");
+	const lines = normalized.split("\n");
+	if (normalized.endsWith("\n")) lines.pop();
+	return lines.length > 0 ? lines : [""];
 }
 
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Fall through to the textarea fallback for pages without clipboard permission.
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "true");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  try {
-    document.body.append(textarea);
-    textarea.select();
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    textarea.remove();
-  }
+function formatDocumentStats(raw: string): string {
+	const lines = getSourceLines(raw);
+	const nonEmptyLines = lines.filter((line) => line.trim().length > 0).length;
+	const bytes = new TextEncoder().encode(raw).byteLength;
+	const size =
+		bytes < 1024 ? `${bytes} Bytes` : `${(bytes / 1024).toFixed(2)} KB`;
+	return `${lines.length} lines (${nonEmptyLines} loc) · ${size}`;
 }
 
-function setStatus(status: HTMLElement, message: string): void {
-  status.textContent = message;
-  window.setTimeout(() => {
-    if (status.textContent === message) status.textContent = "";
-  }, 2200);
+function isNarrowScreen(): boolean {
+	return window.matchMedia?.("(max-width: 760px)").matches ?? false;
+}
+
+type CodeSection = {
+	button: HTMLButtonElement;
+	collapsed: boolean;
+	end: number;
+	start: number;
+};
+
+function buildCodeView(container: HTMLElement, raw: string): void {
+	const lines = getSourceLines(raw);
+	const rows: HTMLElement[] = [];
+	const sections: CodeSection[] = [];
+	let fenceLanguage: string | null = null;
+
+	lines.forEach((line, index) => {
+		const row = document.createElement("div");
+		row.className = "mm-source-line";
+		row.dataset.line = String(index + 1);
+
+		const gutter = document.createElement("span");
+		gutter.className = "mm-source-gutter";
+
+		const heading =
+			fenceLanguage === null ? /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line) : null;
+		if (heading) {
+			const toggle = document.createElement("button");
+			toggle.type = "button";
+			toggle.className = "mm-fold-toggle";
+			toggle.setAttribute("aria-label", `Collapse ${heading[2]}`);
+			toggle.setAttribute("aria-expanded", "true");
+			toggle.innerHTML = chevronDownIcon;
+			gutter.append(toggle);
+			sections.push({
+				button: toggle,
+				collapsed: false,
+				end: lines.length,
+				start: index,
+			});
+			row.dataset.headingDepth = String(heading[1].length);
+		}
+
+		const number = document.createElement("span");
+		number.className = "mm-line-number";
+		number.textContent = String(index + 1);
+		gutter.append(number);
+
+		const code = document.createElement("code");
+		code.className = "mm-source-code";
+
+		const fence = /^\s*(`{3,}|~{3,})\s*([\w+-]+)?/.exec(line);
+		code.innerHTML = highlightSourceLine(
+			line || " ",
+			fenceLanguage ?? "markdown",
+		);
+		if (fence) {
+			fenceLanguage = fenceLanguage === null ? fence[2] || "plaintext" : null;
+		}
+
+		row.append(gutter, code);
+		rows.push(row);
+		container.append(row);
+	});
+
+	sections.forEach((section, sectionIndex) => {
+		const depth = Number(rows[section.start]?.dataset.headingDepth ?? 6);
+		const nextSection = sections.slice(sectionIndex + 1).find((candidate) => {
+			const candidateDepth = Number(
+				rows[candidate.start]?.dataset.headingDepth ?? 6,
+			);
+			return candidateDepth <= depth;
+		});
+		section.end = nextSection?.start ?? lines.length;
+	});
+
+	const renderCollapsedSections = () => {
+		rows.forEach((row, index) => {
+			row.hidden = sections.some(
+				(section) =>
+					section.collapsed && index > section.start && index < section.end,
+			);
+		});
+		sections.forEach((section) => {
+			section.button.classList.toggle("mm-collapsed", section.collapsed);
+			section.button.setAttribute("aria-expanded", String(!section.collapsed));
+			const headingText =
+				rows[section.start]?.querySelector(".mm-source-code")?.textContent ??
+				"section";
+			section.button.setAttribute(
+				"aria-label",
+				`${section.collapsed ? "Expand" : "Collapse"} ${headingText.replace(/^#+\s*/, "")}`,
+			);
+		});
+	};
+
+	sections.forEach((section) => {
+		section.button.addEventListener("click", () => {
+			section.collapsed = !section.collapsed;
+			renderCollapsedSections();
+		});
+	});
+}
+
+function setView(root: HTMLElement, mode: ViewMode, tocOpen: boolean): void {
+	const preview = root.querySelector<HTMLElement>("#mm-preview");
+	const code = root.querySelector<HTMLElement>("#mm-code");
+	const raw = root.querySelector<HTMLElement>("#mm-raw");
+	const toc = root.querySelector<HTMLElement>("#mm-toc");
+	const tocToggle = root.querySelector<HTMLButtonElement>("#mm-toc-toggle");
+	const tocBackdrop = root.querySelector<HTMLButtonElement>("#mm-toc-backdrop");
+	if (!preview || !code || !raw || !toc || !tocToggle || !tocBackdrop) return;
+
+	preview.hidden = mode !== "preview";
+	code.hidden = mode !== "code";
+	raw.hidden = mode !== "raw";
+	const tocVisible = mode === "preview" && tocOpen && !tocToggle.disabled;
+	toc.hidden = !tocVisible;
+	tocBackdrop.hidden = !tocVisible;
+	tocToggle.hidden = mode !== "preview";
+	tocToggle.setAttribute("aria-expanded", String(tocVisible));
+	root.classList.toggle("mm-no-toc", !tocVisible);
+	root.dataset.view = mode;
+	root
+		.querySelectorAll<HTMLButtonElement>(".mm-view-button")
+		.forEach((button) => {
+			const active = button.dataset.view === mode;
+			button.classList.toggle("mm-active", active);
+			button.setAttribute("aria-pressed", String(active));
+		});
 }
 
 function renderToc(root: HTMLElement, formatted: FormattedMarkdown): void {
-  const toc = root.querySelector<HTMLElement>("#mm-toc");
-  const tocList = root.querySelector<HTMLOListElement>("#mm-toc-list");
-  const tocToggle = root.querySelector<HTMLButtonElement>("#mm-toc-toggle");
-  if (!toc || !tocList || !tocToggle) return;
+	const tocList = root.querySelector<HTMLOListElement>("#mm-toc-list");
+	const tocToggle = root.querySelector<HTMLButtonElement>("#mm-toc-toggle");
+	if (!tocList || !tocToggle) return;
 
-  buildToc(tocList, formatted.headings);
-  tocToggle.disabled = formatted.headings.length === 0;
-  if (formatted.headings.length === 0) {
-    toc.hidden = true;
-    tocToggle.setAttribute("aria-expanded", "false");
-  }
-  root.classList.toggle("mm-no-toc", toc.hidden);
+	buildToc(tocList, formatted.headings);
+	tocToggle.disabled = formatted.headings.length === 0;
 }
 
 export async function createViewer(raw: string): Promise<void> {
-  const themePreference = await readPreference<string>(THEME_KEY, "auto");
-  const theme: Theme = isTheme(themePreference) ? themePreference : "auto";
+	const themePreference = await readPreference<string>(THEME_KEY, "auto");
+	const theme: Theme = isTheme(themePreference) ? themePreference : "auto";
 
-  document.documentElement.dataset.markdownMonroe = "viewer";
-  document.documentElement.replaceChildren(document.createElement("head"), document.createElement("body"));
-  const head = document.documentElement.querySelector("head")!;
-  const body = document.documentElement.querySelector("body")!;
-  document.title = "Markdown Monroe";
+	document.documentElement.dataset.markdownMonroe = "viewer";
+	const head = document.createElement("head");
+	const body = document.createElement("body");
+	document.documentElement.replaceChildren(head, body);
+	document.title = "Markdown Monroe";
 
-  const stylesheet = document.createElement("link");
-  stylesheet.rel = "stylesheet";
-  stylesheet.href = extensionUrl("content.css");
-  head.append(stylesheet);
+	const stylesheet = document.createElement("link");
+	stylesheet.rel = "stylesheet";
+	stylesheet.href = extensionUrl("content.css");
+	head.append(stylesheet);
 
-  const root = document.createElement("div");
-  root.id = "mm-root";
-  root.dataset.theme = theme;
-  createShell(root);
-  body.append(root);
+	const root = document.createElement("div");
+	root.id = "mm-root";
+	root.dataset.theme = theme;
+	root.dataset.view = "preview";
+	createShell(root);
+	body.append(root);
 
-  const formatted = root.querySelector<HTMLElement>("#mm-formatted")!;
-  const rawView = root.querySelector<HTMLElement>("#mm-raw code")!;
-  const status = root.querySelector<HTMLElement>("#mm-status")!;
-  const themeSelect = root.querySelector<HTMLSelectElement>("#mm-theme")!;
-  themeSelect.value = theme;
-  formatted.innerHTML = renderMarkdown(raw);
-  rawView.textContent = raw;
+	const preview = requiredElement<HTMLElement>(root, "#mm-preview");
+	const codeView = requiredElement<HTMLElement>(root, "#mm-code");
+	const rawView = requiredElement<HTMLElement>(root, "#mm-raw code");
+	const stats = requiredElement<HTMLElement>(root, "#mm-document-stats");
+	const themeSelect = requiredElement<HTMLSelectElement>(root, "#mm-theme");
+	let currentView: ViewMode = "preview";
+	let tocOpen = true;
 
-  const formattedDetails = prepareFormattedContent(formatted);
-  renderToc(root, formattedDetails);
+	themeSelect.value = theme;
+	stats.textContent = formatDocumentStats(raw);
+	preview.innerHTML = renderMarkdown(raw);
+	buildCodeView(codeView, raw);
+	rawView.textContent = raw;
 
-  root.querySelectorAll<HTMLButtonElement>(".mm-view-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const mode = button.dataset.view;
-      if (mode === "formatted" || mode === "raw") setView(root, mode);
-    });
-  });
+	const previewDetails = prepareFormattedContent(preview);
+	renderToc(root, previewDetails);
+	tocOpen = previewDetails.headings.length > 0;
+	setView(root, currentView, tocOpen);
 
-  root.querySelector<HTMLButtonElement>("#mm-toc-toggle")!.addEventListener("click", () => {
-    const toc = root.querySelector<HTMLElement>("#mm-toc")!;
-    const toggle = root.querySelector<HTMLButtonElement>("#mm-toc-toggle")!;
-    const visible = !toc.hidden;
-    toc.hidden = visible;
-    toggle.setAttribute("aria-expanded", String(!visible));
-    root.classList.toggle("mm-no-toc", toc.hidden);
-  });
+	root
+		.querySelectorAll<HTMLButtonElement>(".mm-view-button")
+		.forEach((button) => {
+			button.addEventListener("click", () => {
+				const mode = button.dataset.view;
+				if (mode !== "preview" && mode !== "code" && mode !== "raw") return;
+				currentView = mode;
+				setView(root, currentView, tocOpen);
+			});
+		});
 
-  root.querySelector<HTMLButtonElement>("#mm-copy-markdown")!.addEventListener("click", async () => {
-    setStatus(status, (await copyText(raw)) ? "Markdown copied" : "Could not copy Markdown");
-  });
+	const closeToc = () => {
+		tocOpen = false;
+		setView(root, currentView, tocOpen);
+	};
 
-  const copyCodeButton = root.querySelector<HTMLButtonElement>("#mm-copy-code")!;
-  copyCodeButton.disabled = formattedDetails.codeBlocks.length === 0;
-  copyCodeButton.addEventListener("click", async () => {
-    const code = formattedDetails.codeBlocks.map((block) => block.text).join("\n\n");
-    setStatus(status, (await copyText(code)) ? "Code blocks copied" : "Could not copy code blocks");
-  });
+	root
+		.querySelector<HTMLButtonElement>("#mm-toc-toggle")
+		?.addEventListener("click", () => {
+			tocOpen = !tocOpen;
+			setView(root, currentView, tocOpen);
+		});
+	root
+		.querySelector<HTMLButtonElement>("#mm-toc-close")
+		?.addEventListener("click", closeToc);
+	root
+		.querySelector<HTMLButtonElement>("#mm-toc-backdrop")
+		?.addEventListener("click", closeToc);
+	root
+		.querySelector<HTMLOListElement>("#mm-toc-list")
+		?.addEventListener("click", (event) => {
+			if (event.target instanceof HTMLAnchorElement && isNarrowScreen()) {
+				closeToc();
+			}
+		});
 
-  formatted.addEventListener("click", async (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLButtonElement) || !target.classList.contains("mm-code-copy")) return;
-    const block = target.closest<HTMLElement>(".mm-code-block");
-    if (!block) return;
-    const copied = await copyText(block.dataset.code ?? "");
-    const original = target.textContent;
-    target.textContent = copied ? "Copied" : "Retry";
-    setStatus(status, copied ? "Code block copied" : "Could not copy code block");
-    window.setTimeout(() => {
-      target.textContent = original;
-    }, 1600);
-  });
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && currentView === "preview" && tocOpen)
+			closeToc();
+	});
 
-  themeSelect.addEventListener("change", async () => {
-    const next = themeSelect.value;
-    if (!isTheme(next)) return;
-    root.dataset.theme = next;
-    await writePreference(THEME_KEY, next);
-    setStatus(status, `Theme set to ${next}`);
-  });
+	themeSelect.addEventListener("change", async () => {
+		const next = themeSelect.value;
+		if (!isTheme(next)) return;
+		root.dataset.theme = next;
+		await writePreference(THEME_KEY, next);
+	});
 }

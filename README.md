@@ -6,9 +6,8 @@ A glamorous Markdown response viewer for Chrome and Firefox.
 
 - GitHub Flavored Markdown (headings, links, emphasis, tables, task lists, strikethrough, blockquotes, lists, and fenced code)
 - Syntax highlighting in fenced code blocks
-- Copy one code block or all code blocks to the clipboard
-- Toggleable, keyboard-operable table of contents
-- Formatted and raw modes, with the original response preserved for raw mode and copying
+- Preview, Code, and Raw views, with line numbers and collapsible heading sections in Code
+- Toggleable, keyboard-operable Outline that becomes a drawer on narrow screens
 - Light, dark, and auto (system) themes with a persisted browser-local preference
 - Unsafe HTML is sanitized before it reaches the viewer
 
@@ -58,14 +57,13 @@ Build first with `bun run build`, then load the `dist/` directory:
 2. Choose **Load Temporary Add-on**.
 3. Select `dist/manifest.json`.
 
-Open the fixture links in each browser and verify detection, rendered GFM, TOC navigation and toggle, formatted/raw switching, syntax highlighting, both clipboard actions, and all three theme choices. Reload after choosing a theme to verify persistence. Also open `/ordinary.html` to confirm it is not replaced and `/unsafe.md` to confirm scripts, event handlers, and unsafe URL schemes do not execute.
+Open the fixture links in each browser and verify detection, rendered GFM, Outline navigation and toggle, Preview/Code/Raw switching, Code folding, syntax highlighting, and all three theme choices. Reload after choosing a theme to verify that the theme persists while the view resets to Preview with the Outline open. Also open `/ordinary.html` to confirm it is not replaced and `/unsafe.md` to confirm scripts, event handlers, and unsafe URL schemes do not execute.
 
 `bun run verify:fixtures` uses JSDOM to exercise the detector and sanitizer in Bun. When headed Chrome is launched with a DevTools port, the repeatable Chrome smoke check can be run with `bun run smoke:chrome` (set `MARKDOWN_MONROE_CDP_PORT` and `MARKDOWN_MONROE_FIXTURE_ORIGIN` when they differ from `9222` and `http://127.0.0.1:4174`).
 
 ## Browser notes and limitations
 
 - Chrome and Firefox use the same Manifest V3 bundle and storage adapter. Firefox uses the `browser` API when present; Chrome uses `chrome`.
-- Clipboard writes depend on the browser allowing a user-gesture clipboard operation on the current page. Markdown Monroe provides a textarea fallback, but a restrictive page policy can still deny copying.
 - Temporary Firefox add-ons are removed when the browser session ends; load `dist/manifest.json` again after restarting Firefox.
 - The detector intentionally does not replace arbitrary `text/plain` paragraphs because doing so would make ordinary plain-text pages surprising. Such responses need Markdown-shaped syntax or a Markdown MIME type.
 - Markdown parsing is provided by Marked with GFM enabled. Sanitization removes raw executable/embedded HTML; intentionally unsafe or unusual raw HTML may therefore render differently from the source.
