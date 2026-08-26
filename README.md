@@ -11,6 +11,14 @@ A clean, GitHub-style Markdown viewer for Chrome.
 - Light, dark, and auto (system) themes with a persisted browser-local preference
 - Unsafe HTML is sanitized before it reaches the viewer
 
+## Screenshots
+
+![Markdown Monroe Preview with Outline](docs/screenshots/readme-preview.jpeg)
+*Preview mode with GitHub-flavored Markdown and the document Outline.*
+
+![Markdown Monroe dark Code view](docs/screenshots/readme-code-dark.jpeg)
+*Dark Code mode with line numbers, syntax highlighting, and collapsible headings.*
+
 Markdown Monroe runs as a content script on all pages but only replaces a response when its MIME type is Markdown (`text/markdown`, `text/x-markdown`, or the corresponding `application/*` types). `text/plain` responses are replaced only when the body is a plain-text document containing recognizable Markdown syntax. Normal HTML documents are left alone.
 
 ### Planned features
