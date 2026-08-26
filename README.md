@@ -13,6 +13,12 @@ A clean, GitHub-style Markdown viewer for Chrome.
 
 Markdown Monroe runs as a content script on all pages but only replaces a response when its MIME type is Markdown (`text/markdown`, `text/x-markdown`, or the corresponding `application/*` types). `text/plain` responses are replaced only when the body is a plain-text document containing recognizable Markdown syntax. Normal HTML documents are left alone.
 
+### Planned features
+
+- Copy markdown to clipboard
+- Copy fenced copy block contents to clipboard
+- Handy keyboard shortcuts 
+
 ## Development
 
 Bun is the required runtime and package manager. The repository intentionally contains `bun.lock` and no npm lockfile.
