@@ -8,20 +8,20 @@ const requested = process.argv[2] ?? "all";
 const targets = requested === "all" ? ["chrome", "firefox"] : [requested];
 
 if (targets.some((target) => target !== "chrome" && target !== "firefox")) {
-  throw new Error("Usage: bun scripts/package.ts [chrome|firefox|all]");
+	throw new Error("Usage: bun scripts/package.ts [chrome|firefox|all]");
 }
 
 const manifest = Bun.file(resolve(dist, "manifest.json"));
 if (!(await manifest.exists())) {
-  throw new Error("dist/manifest.json is missing; run bun run build first");
+	throw new Error("dist/manifest.json is missing; run bun run build first");
 }
 
 for (const target of targets) {
-  const output = resolve(projectRoot, `markdown-monroe-${target}.zip`);
-  await mkdir(projectRoot, { recursive: true });
-  const result = Bun.spawnSync(["zip", "-qr", output, "."], { cwd: dist });
-  if (result.exitCode !== 0) {
-    throw new Error(new TextDecoder().decode(result.stderr));
-  }
-  console.log(`Created ${output}`);
+	const output = resolve(projectRoot, `markdown-monroe-${target}.zip`);
+	await mkdir(projectRoot, { recursive: true });
+	const result = Bun.spawnSync(["zip", "-qr", output, "."], { cwd: dist });
+	if (result.exitCode !== 0) {
+		throw new Error(new TextDecoder().decode(result.stderr));
+	}
+	console.log(`Created ${output}`);
 }
