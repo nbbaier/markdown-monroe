@@ -3,12 +3,6 @@
 	"name": "Markdown Monroe",
 	"version": "0.1.0",
 	"description": "A glamorous interactive viewer for Markdown responses.",
-	"browser_specific_settings": {
-		"gecko": {
-			"id": "markdown-monroe@local",
-			"strict_min_version": "109.0"
-		}
-	},
 	"icons": {
 		"16": "icons/icon16.png",
 		"48": "icons/icon48.png",

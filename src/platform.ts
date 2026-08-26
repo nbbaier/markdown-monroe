@@ -13,14 +13,12 @@ type ExtensionApi = {
 	runtime: { getURL(path: string): string };
 };
 
-type GlobalWithExtensionApis = typeof globalThis & {
-	browser?: ExtensionApi;
+type GlobalWithChromeApi = typeof globalThis & {
 	chrome?: ExtensionApi;
 };
 
 function getExtensionApi(): ExtensionApi {
-	const globals = globalThis as GlobalWithExtensionApis;
-	const api = globals.browser ?? globals.chrome;
+	const api = (globalThis as GlobalWithChromeApi).chrome;
 	if (!api) {
 		throw new Error("Markdown Monroe extension APIs are unavailable");
 	}

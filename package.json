@@ -6,9 +6,7 @@
 	"scripts": {
 		"check": "tsc --noEmit",
 		"build": "vite build",
-		"package": "bun run build && bun scripts/package.ts all",
-		"package:chrome": "bun run build && bun scripts/package.ts chrome",
-		"package:firefox": "bun run build && bun scripts/package.ts firefox",
+		"package": "bun run build && bun scripts/package.ts",
 		"fixtures": "bun scripts/fixture-server.ts",
 		"verify:fixtures": "bun scripts/verify-fixtures.ts",
 		"smoke:chrome": "bun scripts/chrome-smoke.ts"

@@ -3,7 +3,7 @@
 ## Comparison target
 
 - Source visual truth: `screenshots/light-preview-contents.jpeg`, `screenshots/light-preview-no-contents.jpeg`, `screenshots/light-code.jpeg`, `screenshots/dark-preview-contents.jpeg`, `screenshots/dark-preview-no-contents.jpeg`, `screenshots/dark-code.jpeg`, and `/var/folders/w8/w4w7h1dx4_1dxjsr8kp_smy80000gn/T/codex-clipboard-c201aa34-b042-4df2-85f2-98f8d2f6b0da.png` for the scrolled sticky-toolbar state.
-- Annotation 1 source-state reproduction: `design-qa-artifacts/annotation-1-source-1323x674.png`, captured at the annotated 1323 x 674 viewport with Dark theme, Preview mode, Outline open, and the original `24px 16px 72px` root padding.
+- Annotation 1 source-state reproduction: `artifacts/annotation-1-source-1323x674.png`, captured at the annotated 1323 x 674 viewport with Dark theme, Preview mode, Outline open, and the original `24px 16px 72px` root padding.
 - Implementation: the built extension rendered by `http://127.0.0.1:4173/viewer.html` in the Codex in-app browser.
 - Desktop viewport: 1442 x 900 CSS pixels.
 - Mobile viewport: 390 x 844 CSS pixels.
@@ -12,13 +12,13 @@
 
 ## Evidence
 
-- Full-view comparison: `design-qa-artifacts/comparison-light-preview-contents.png`
-- Full-view comparison: `design-qa-artifacts/comparison-dark-preview-no-contents.png`
-- Full-view comparison: `design-qa-artifacts/comparison-light-code.png`
-- Raw implementation: `design-qa-artifacts/implementation-light-raw-visible.png`
-- Sticky-toolbar implementation: `design-qa-artifacts/implementation-sticky-toolbar-scrolled.png`
-- Mobile drawer implementation: `design-qa-artifacts/implementation-mobile-outline-drawer.png`
-- Annotation 1 full-view comparison: `design-qa-artifacts/comparison-annotation-1-padding.png` (source state on the left, updated implementation on the right).
+- Full-view comparison: `artifacts/comparison-light-preview-contents.png`
+- Full-view comparison: `artifacts/comparison-dark-preview-no-contents.png`
+- Full-view comparison: `artifacts/comparison-light-code.png`
+- Raw implementation: `artifacts/implementation-light-raw-visible.png`
+- Sticky-toolbar implementation: `artifacts/implementation-sticky-toolbar-scrolled.png`
+- Mobile drawer implementation: `artifacts/implementation-mobile-outline-drawer.png`
+- Annotation 1 full-view comparison: `artifacts/comparison-annotation-1-padding.png` (source state on the left, updated implementation on the right).
 
 The full-view comparisons are sufficient for the main layout, typography, palette, and Code-density checks. The sticky toolbar and mobile drawer use focused implementation captures because their reference truth is an interaction state rather than a separate full-page composition.
 
@@ -36,10 +36,10 @@ No actionable P0, P1, or P2 findings remain.
 ## Comparison history
 
 1. Initial browser capture had no styling because the development harness served the built stylesheet with the wrong MIME type. The harness now serves explicit CSS and JavaScript MIME types; the post-fix capture loads `content.css` and matches the target styling.
-2. The initial frame and no-Outline reading column were too narrow at 1280px and 800px. They were changed to use the available 1440px frame and the GitHub-like 1012px reading column. Post-fix evidence: `comparison-light-preview-contents.png` and `comparison-dark-preview-no-contents.png`.
+2. The initial frame and no-Outline reading column were too narrow at 1280px and 800px. They were changed to use the available 1440px frame and the GitHub-like 1012px reading column. Post-fix evidence: `artifacts/comparison-light-preview-contents.png` and `artifacts/comparison-dark-preview-no-contents.png`.
 3. The initial dark background used `#0d1117`, which was visibly darker than the supplied screenshots. Source sampling found `#212830` for the viewer and `#282c35` for code surfaces; those values now match in the post-fix dark comparison.
 4. Hiding the mobile Outline button's text also removed its accessible name. An explicit `aria-label` was added; the drawer was then opened and closed successfully at 390 x 844.
-5. Annotation 1 identified `24px 16px 72px` desktop root padding plus a separate narrow-screen override. The root now uses `padding: 0` without a mobile override. At 1323 x 674, computed padding is `0px` on every side and both `#mm-root` and `.mm-viewer-frame` begin at x=0, y=0 with a width of 1323px. Post-fix evidence: `comparison-annotation-1-padding.png`; the browser console reported no errors.
+5. Annotation 1 identified `24px 16px 72px` desktop root padding plus a separate narrow-screen override. The root now uses `padding: 0` without a mobile override. At 1323 x 674, computed padding is `0px` on every side and both `#mm-root` and `.mm-viewer-frame` begin at x=0, y=0 with a width of 1323px. Post-fix evidence: `artifacts/comparison-annotation-1-padding.png`; the browser console reported no errors.
 
 ## Implementation checklist
 
