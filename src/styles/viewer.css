@@ -265,6 +265,57 @@ html[data-markdown-monroe="viewer"] body {
 	margin-bottom: 0;
 }
 
+#mm-root .mm-frontmatter {
+	margin-bottom: 24px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--mm-border-muted);
+	font-size: 14px;
+	overflow-wrap: anywhere;
+}
+
+#mm-root .mm-frontmatter-label {
+	margin-bottom: 12px;
+	color: var(--mm-muted);
+	font-weight: 600;
+}
+
+#mm-root .mm-frontmatter dl {
+	margin: 0;
+}
+
+#mm-root .mm-frontmatter dl > div {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+	gap: 16px;
+}
+
+#mm-root .mm-frontmatter dl > div + div {
+	margin-top: 8px;
+}
+
+#mm-root .mm-frontmatter dt {
+	font-weight: 500;
+	white-space: pre-wrap;
+}
+
+#mm-root .mm-frontmatter dd {
+	min-width: 0;
+	margin: 0;
+	color: var(--mm-muted);
+	white-space: pre-wrap;
+}
+
+@media (max-width: 760px) {
+	#mm-root .mm-frontmatter {
+		font-size: 16px;
+	}
+
+	#mm-root .mm-frontmatter dl > div {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+	}
+}
+
 #mm-root .mm-preview h1,
 #mm-root .mm-preview h2,
 #mm-root .mm-preview h3,
