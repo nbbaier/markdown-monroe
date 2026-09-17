@@ -60,6 +60,7 @@ function setFixturePage(mimeType: string, raw: string): void {
 
 const markdown = await Bun.file("fixtures/markdown.md").text();
 const unsafe = await Bun.file("fixtures/unsafe.md").text();
+const frontmatter = await Bun.file("fixtures/frontmatter.md").text();
 
 setFixturePage("text/markdown", markdown);
 const markdownDetection = detectMarkdownDocument();
@@ -114,6 +115,60 @@ assert(
 
 const sanitized = renderMarkdown(unsafe);
 assert(!/<script\b/i.test(sanitized), "Script survived DOMPurify sanitization");
+
+const frontmatterRendered = renderMarkdown(frontmatter);
+const frontmatterContainer = document.createElement("article");
+frontmatterContainer.innerHTML = frontmatterRendered;
+const frontmatterPanel = frontmatterContainer.querySelector(".mm-frontmatter");
+assert(frontmatterPanel, "Frontmatter panel was not rendered");
+const frontmatterPairs = [
+	...frontmatterContainer.querySelectorAll<HTMLDListElement>(
+		".mm-frontmatter dt, .mm-frontmatter dd",
+	),
+].map((element) => element.textContent);
+assert(
+	JSON.stringify(frontmatterPairs) ===
+		JSON.stringify([
+			"title",
+			"Frontmatter fixture",
+			"description",
+			"A document whose leading block is parsed as YAML frontmatter.",
+			"tags",
+			"- preview\n- metadata",
+			"keywords",
+			"frontmatter, yaml, monroe",
+			"author",
+			"name: Monroe\nsite: https://example.com/monroe",
+			"draft",
+			"false",
+			"revision",
+			"4",
+		]),
+	`Frontmatter metadata did not render as expected: ${JSON.stringify(frontmatterPairs)}`,
+);
+assert(
+	!frontmatterContainer.querySelector("del"),
+	"Frontmatter body leaked into the rendered document",
+);
+const frontmatterDetails = prepareFormattedContent(frontmatterContainer);
+assert(
+	frontmatterDetails.headings.some(
+		(heading) => heading.depth === 1 && heading.text === "Frontmatter fixture",
+	),
+	"Frontmatter body heading was not rendered",
+);
+const frontmatterBody = frontmatter.slice(frontmatter.indexOf("---", 3) + 3);
+const frontmatterBodyRendered = renderMarkdown(frontmatterBody);
+assert(
+	!frontmatterBodyRendered.includes("mm-frontmatter"),
+	"Body without frontmatter produced a metadata panel",
+);
+assert(
+	!renderMarkdown("---\ntitle: [unclosed\n---\n# Body").includes(
+		"mm-frontmatter",
+	),
+	"Malformed frontmatter was not treated as body content",
+);
 assert(
 	!/\sonerror\s*=/i.test(sanitized),
 	"Event handler survived DOMPurify sanitization",

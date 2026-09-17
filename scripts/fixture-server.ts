@@ -11,6 +11,7 @@ const contentTypes: Record<string, string> = {
 	"/": "text/html; charset=utf-8",
 	"/index.html": "text/html; charset=utf-8",
 	"/markdown.md": "text/markdown; charset=utf-8",
+	"/frontmatter.md": "text/markdown; charset=utf-8",
 	"/unsafe.md": "text/markdown; charset=utf-8",
 	"/plain.txt": "text/plain; charset=utf-8",
 	"/ordinary.html": "text/html; charset=utf-8",
